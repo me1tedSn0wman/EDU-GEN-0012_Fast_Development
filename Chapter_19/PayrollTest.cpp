@@ -188,3 +188,299 @@ void PayrollTest::TestChangeHourlyTransaction()
 	WeeklySchedule* ws = dynamic_cast<WeeklySchedule*>(ps);
 	assert(ws);
 }
+
+/*
+19_29
+*/
+
+void PayrollTest::TestChangeMemberTransaction()
+{
+	cerr << "TestChangeMemberTransaction" << endl;
+	int empid = 9;
+	int memberId = 7734;
+	AddHourlyEmployee t(empId, "Bill", "Home", 15.25);
+	t.Execute();
+
+	TestChangeMemberTransaction cmt(empid, memberid, 99.42);
+	cmt.Execute();
+
+	Employee* e = GpeyrollDatabase.GetEmployee(empid);
+	assert(e);
+
+	Affiliation* af = e->GetAffiliation();
+	assert(af);
+
+	UnionAffiliation* uf = dynamic_cast<UnionAffiliation*>(af);
+	assert(uf);
+	assertEquals(99.42, uf->GetDues(), 0.001);
+	Employee* member = GpayrollDatabse.GetUnionMember(memberId);
+	assert(member);
+	assert(e == member);
+}
+
+/*
+19_36
+*/
+
+void PayrollTest::TestPaySingleSalariedEmployee()
+{
+	cerr << "TestPaySingleSalariedEmployee" << endl;
+	int empid = 10;
+	AddSalariedEmployee t(empid, "Bob", "HomeAffairs", 1000.00);
+	t.Execute();
+
+	Date payDate(11, 30, 2001);
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	Paycheck* pc = pt.GetPaycheck(empid);
+	assert(pc);
+	assert(pc->GetPayDate() == payDate);
+	assertEquals(1000.00, pc->GetGrossPay(), 0.001);
+	assert("Hold" == pc->GetField("Disposition"));
+	assertEquals(0.0, pc->GetDeductions(), 0.001);
+	assertEquals(1000.00, pc->GetNetPay(), 0.001);
+}
+
+void PayrollTest::TestPaySingleSalariedEmployeeWrongDate() {
+	cerr << "TestPaySingleSalariedEmployeeWrongDate" << endl;
+	int empid = 11;
+	AddSalariedEmployee t(empid, "Bob", "Communa01", 1000.00);
+	t.Execute();
+
+	Date payDate(11, 29, 2001);
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	Paycheck* pc = pt.GetPaycheck(empid);
+	assert(pc == 0);
+}
+
+/*
+19_40
+*/
+
+void PayrollTest::TestPaySingleHourlyEmployeeNoTimeCards()
+{
+	cerr << "TestPaySingleHourlyEmployeeNoTimeCards" << endl;
+	int empid = 12;
+	AddHoulryEmployee t(empid, "Bill", "Trails in the sky", 15.25);
+	t.Execute();
+
+	Date payDate(11, 9, 2001);
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	ValidateHourlyPaycheck(pt, empid, payDate, 0.0);
+}
+
+void PayrollTest::ValidateHourlyPaycheck(
+	PaydayTransaction& pt
+	, int empid
+	, const Date& payDate
+	, double pay)
+{
+	Paycheck* pc = pt.GetPaycheck(empid);
+	assert(pc);
+	assert(pc->GetPayDate() == payDate);
+	assertEquals(pay, pc->GetGrossPay(), .001);
+	assert("Hold" == pc->GetField("Disposition"));
+	assertEquals(0.0, pc->GetDeductions(), .001);
+	assertEquals(pay, pc->GetNetPay(), .001);
+}
+
+/*
+19_41
+*/
+
+void PayrollTest::TestPaySingleHourlyEmployeeOneTimeCard()
+{
+	cerr << "TestPaySingleHourlyEmployeeOneTimeCard" << endl;
+	int empid = 13;
+	AddHourlyEmployee t(empid, "Bill", "Liberl", 15.25);
+	t.Execute();
+	Date payDate(11, 9, 2001);
+
+	TimeCardTransaction tc(payDate, 2.0, empid);
+	tc.Execute();
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	ValidateHourlyPaycheck(pt, empid, payDate, 30.5);
+}
+
+void PayrollTest::TestPaySingleHourlyEmployeeOvertimOneTimeCard()
+{
+	cerr << "TestPaySingleHourlyEmployeeOvertimeOneTimeCard" << endl;
+	int empid = 14;
+	AddHourlyEmployee t(empid, "John", "Calvrad", 15.25);
+	t.Execute();
+	Date payDate(11, 9, 2001);
+
+	TimeCardTransaction tc(payDate, 9.0, empid);
+	tc.Execute();
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	ValidateHourlyPaycheck(pt, empid, payDate, (8 + 1.5) * 15.25);
+}
+
+/*
+19_42
+*/
+
+void PayrollTest::TestPaySingleHourlyEmployeeOnWrongDate() 
+{
+	cerr << "TestPaySingleHourlyEmployeeOnWrongDate" << endl;
+	int empid = 14;
+	AddHourlyEmployee t(empid, "Joshua", "Bose", 15.25);
+	t.Execute();
+	Date payDate(11, 8, 2001);
+
+	TimeCardTransaction tc(payDate, 9.0, empid);
+	tc.Execute();
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	Paycheck* pc = pt.GetPaycheck(empid);
+	assert(pc == 0);
+}
+
+/*
+19_43
+*/
+
+void PayrollTest::TestPaySingleHourlyEmployeeTwoTimeCards()
+{
+	cerr << "TestPaySingleHourlyEmployeeTwoTimeCards" << endl;
+	int empid = 15;
+	AddHourlyEmployee t(empid, "Callius", "Renald", 15.25);
+	t.Execute();
+	Date payDate(11, 9, 2001);
+
+	TimeCardTransaction tc(payDate, 2.0, empid);
+	tc.Execute();
+	TimeCardTransaction tc2(Date(12, 9, 2001), 5.0, empid);
+	tc2.Execute();
+
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	ValidateHourlyPaycheck(pt, empid, payDate, 7 * 15.25);
+}
+
+/*
+19_44
+*/
+
+void PayrollTest::TestPaySingleHourlyEmployeeWithTimeCardsSpanningTwoPayPeriods()
+{
+	cerr << "TestPaySingleHourlyEmployeeWithTimeCards SpanningTwoPayPeriods" << endl;
+	int empid = 16;
+	AddHourlyEmployee t(empid, "Lena", "Renald", 15.25);
+	t.Execute();
+
+	Date payDate(11, 9, 2001);
+	Date dateInPreviousPayPeriod(11, 2, 2001);
+	TimeCardTransaction tc(payDate, 2.0, empid);
+	tc.Execute();
+
+	TimeCardTransaction tc2(dateInPreviousPayPeriod, 5.0, empid);
+	tc2.Execute();
+
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	ValidateHourlyPaycheck(pt, empid, payDate, 2 * 15.25);
+}
+
+/*
+19_47
+*/
+
+void PayrollTest::TestSalariedUnionMemberDues()
+{
+	cerr << "TestSalariedUnionMemberDues" << endl;
+	int empid = 17;
+	AddSalariedEmployee t(empid, "Oliver", "Erebonia", 1000.00);
+	t.Execute();
+	int memberId = 7734;
+	ChangeMemberTransaction cmt(empid, memberid, 9.42);
+	cmt.Execute();
+
+	Date payDate(11, 30, 2001);
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+	ValidatePaycheck(pt, empid, payDate, 1000.00)
+}
+
+/*
+19_51
+*/
+
+void PayrollTest::TestHourlyUnionMemberServiceCharge()
+{
+	cerr << "TestHourlyUnionMemberServiceCharge" << endl;
+	int empid = 18;
+	AddHourlyEmployee t(empid, "Agate", "Calvradia", 15.24);
+	t.Execute();
+
+	int memberid = 7734;
+	ChangeMemberTransaction cmt(empid, memberid, 9.42);
+	cmt.Execute();
+
+	Date payDate(11, 9, 2001);
+	ServiceChargeTransaction set(memberid, payDate, 19.42);
+	set.Execute();
+
+	TimeCardTransaction tct(payDate, 0.0, empid);
+	tct.Execute();
+
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+
+	Paycheck* pc = pt.GetPaycheck(empid);
+
+	assert(pc);
+	assert(pc->GetPayPeriodEndDate() == payDate);
+	assertEquals(8 * 15.24, pc->GetGrossPay(), 0.001);
+	assert("Hold" == pc->GetField("Disposition"));
+	assertEquals(9.42 + 19.42, pc->GetDeductions(), .001);
+	assertEquals((8 * 15.24) - (9.42 + 19.42), pc->GetNetPay(), .001);
+}
+
+/*
+19_52
+*/
+
+void PayrollTest::TestServiceChargesSpanningMultiplePayPeriods
+{
+	cerr << "TestServiceChargesSpanningMultiplePayPeriods" << endl;
+	int empid = 19;
+	AddHourlyEmployee t(empid, "Tom", "Brooklyn", 15.24);
+	t.Execute();
+
+	int memberid = 7734;
+	ChangeMemberTransaction cmt(empid, memberid, 9.42);
+	cmt.Execute();
+
+	Date earlyDate(11, 2, 2001);
+	Date payDate(11, 2, 2001);
+	Date lateDate(11, 16, 2001);
+
+	ServiceChargeTransaction sct(memberid, payDate, 19.42);
+	set.Execute();
+
+	ServiceChargeTransaction sctEarly(memberid, earlyDate, 100.00);
+	sctEarly.Execute();
+
+	ServiceChargeTransaction sctLate(memberid, lateDate, 200.00);
+	sctLate.Execute();
+
+	TimeCardTransaction tct(payDate, 8.0, empid);
+	tct.Execute();
+
+	PaydayTransaction pt(payDate);
+	pt.Execute();
+
+	Paycheck* pc = pt.GetPaycheck(empid);
+	assert(pc);
+	assert(pc->GetPayPeriodEndDate() == payDate);
+	assertEquals(8 * 15.24, pc->GetGrossPay(), .001);
+	assert("Hold" == pc->GetField("Disposition"));
+	assertEquals(9.42 + 19.42, pc->GetDeductions(), .001);
+	assertEquals((8 * 15.24) - (9.42 + 19.42), pc->GetNetPay(), .001);
+
+}
