@@ -1,20 +1,17 @@
 /*
-28_19
+28_33
 */
 
-public class PiecePart implements PartialResultException
+public class PiecePart extends PartialResultException
 {
-	public PlacePart(String partNumber, String description, double cost)
+	public PiecePart(String partNumber, String description, double cost)
 	{
 		itsPartNumber = partNumber;
 		itsDescription = description;
 		itsCost = cost;
+		addExtension("CSV", new CSVPiecePartExtension(this));
+		addExtension("XML", new XMLPiecePartExtension(this));
 		
-	}
-	
-	public void accept(PartVisitor v)
-	{
-		v.visit(this);
 	}
 	
 	public String getPartNumber()
@@ -29,7 +26,7 @@ public class PiecePart implements PartialResultException
 	
 	public double getCost()
 	{
-		return itsCost;
+		return itsCost;		
 	}
 	
 	private String itsPartNumber;

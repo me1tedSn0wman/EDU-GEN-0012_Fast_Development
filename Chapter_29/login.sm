@@ -1,0 +1,41 @@
+/*
+29_11
+*/
+
+Initial init
+{
+	init
+	{
+		start logginin displayLoginScreen
+	}
+	
+	logginIn
+	{
+		enter checkingPassword checkPassword
+		cancel init clearScreen
+	}
+	
+	checkingPassword
+	{
+		passwordGood loggedIn startUserProcess
+		passwordBad notifyingPasswordBad displayBadPasswordScreen
+		thiedBadPassword screenLocked displayLockScreen
+	}
+	
+	notifyingPasswordBad
+	{
+		OK checkingPassword displayLoginScreen
+		cancel init clearScreen
+	}
+	
+	screenLocked
+	{
+		enter checkingAdminPassword checkAdminPassword
+	}
+	
+	checkinAdminPassword
+	{
+		passwordGood init clearScreen
+		passwordBad screenLocked displayLockScreen
+	}
+}

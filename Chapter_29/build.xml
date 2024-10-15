@@ -1,0 +1,15 @@
+<project name="SMCTurnstile" default="TestSMCTurnstile" basedir=".">
+	<property environment="env" />
+	
+	<path id="classpath">
+		<pathelement path="${env.CLASSPATH}"/>
+	</path>
+	
+	<target name="TurnstileFSM">
+		<java classname="smc.Smc">
+			<arg value="-f TurnstileFSM.sm"/>
+			<classpath refid="classpath"/>
+		</java>
+	</target>
+
+</project>
